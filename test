@@ -1,0 +1,22 @@
+#!/bin/bash
+set -eu
+
+docheck=
+if [[ "${1:-}" = "-c" ]]; then
+  shift
+  docheck=docheck
+fi
+
+titlekey=$1
+
+make -s build
+./runepub -n -f -d "$titlekey"
+outd="$titlekey.d"
+rm -rf "$outd"
+mkdir "$outd"
+unzip -q -d "$outd" "$titlekey.epub"
+if [[ -n "$docheck" ]]; then
+  epubcheck "$titlekey.epub"
+fi
+
+printf "\n"
