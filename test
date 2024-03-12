@@ -10,7 +10,7 @@ fi
 titlekey=$1
 
 make -s build
-./runepub -n -f -d "$titlekey"
+./runepub -d -f "$titlekey"
 outd="$titlekey.d"
 rm -rf "$outd"
 mkdir "$outd"

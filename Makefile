@@ -13,4 +13,4 @@ all-check:
 	for t in ${books}; do ./test -c $$t; done
 
 proper: build
-	for t in ${books}; do ./runepub -f -d $$t; done
+	for t in ${books}; do ./runepub -d -l -f $$t; done

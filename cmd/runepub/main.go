@@ -67,22 +67,46 @@ func msgf(format string, args ...interface{}) {
 
 func main() {
 	var (
-		simpleNameFlag bool
-		overwriteFlag  bool
-		downloadFlag   bool
+		longNameFlag  bool
+		overwriteFlag bool
+		downloadFlag  bool
 	)
-	flag.BoolVar(&simpleNameFlag, "n", false, "Output 'titlekey.epub' instead of 'Author - Title (year) [runeberg-titlekey].epub'")
-	flag.BoolVar(&overwriteFlag, "f", false, "Overwrite existing output file")
-	flag.BoolVar(&downloadFlag, "d", false, "First download book zip (titlekey-txt.zip) from runeberg.org (given titlekey)")
+	descDownload := "Download the zip-file by its titlekey"
+	descLongName := "Use long output filename, including author, title etc"
+	descOverwrite := "Overwrite existing output file"
+	flag.BoolVar(&downloadFlag, "d", false, descDownload)
+	flag.BoolVar(&longNameFlag, "l", false, descLongName)
+	flag.BoolVar(&overwriteFlag, "f", false, descOverwrite)
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Usage:
+  runepub [OPTIONS] ZIP-FILE
+  runepub [OPTIONS] -d TITLEKEY
+
+This program tries to convert a book zip-file from https://runeberg.org
+into an EPUB file. It expects a typical 'titlekey-txt.zip' file as
+input. If the '-d' flag is used, it will instead try to download the
+file by its titlekey.
+
+Default output filename: titlekey.epub
+
+Options:
+  -d  %s
+  -l  %s
+  -f  %s
+`, descDownload, descLongName, descOverwrite)
+	}
 	flag.Parse()
 
 	if flag.NArg() != 1 {
 		if downloadFlag {
-			failf("Pass the titlekey of a book to download, for example: drglas")
+			fmt.Fprintf(os.Stderr, "Pass the titlekey of a book to download.\n\n")
 		} else {
-			failf("Pass a book zip, for example: drglas-txt.zip")
+			fmt.Fprintf(os.Stderr, "Pass a book zip-file.\n\n")
 		}
+		flag.Usage()
+		os.Exit(2)
 	}
+
 	src := flag.Args()[0]
 
 	if downloadFlag {
@@ -130,19 +154,18 @@ func main() {
 	}
 	msgf("Sections: %s\n", strings.Join(sections, ";"))
 
-	var outname string
-	if simpleNameFlag {
-		outname = fmt.Sprintf("%s.epub", b.TitleKey)
-	} else {
+	outname := fmt.Sprintf("%s.epub", b.TitleKey)
+	if longNameFlag {
 		outname = fmt.Sprintf("%s - %s", b.Author, b.Title)
 		if b.Year != "" {
 			outname += fmt.Sprintf(" (%s)", b.Year)
 		}
 		outname += fmt.Sprintf(" [runeberg-%s].epub", b.TitleKey)
 	}
+
 	if !overwriteFlag {
 		if _, err := os.Stat(outname); err == nil || !os.IsNotExist(err) {
-			failf("Output filename %q exists", outname)
+			failf("Output file %q exists", outname)
 		}
 	}
 
