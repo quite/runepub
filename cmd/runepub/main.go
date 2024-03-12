@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -9,52 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-shiori/go-epub"
 	"github.com/quite/runepub/internal/book"
 )
-
-const css = `
-p {
-  text-indent: 0;
-  margin-top: 0;
-}
-
-p + p {
-  margin-top: 1.5ex;
-}
-
-h1, h2, h3,
-p.center, div.center {
-  text-align: center;
-}
-
-hr {
-  border: 1px solid black;
-}
-
-span.spaced {
-  letter-spacing: 0.1rem;
-}
-
-span.smallcaps {
-  font-variant: small-caps;
-}
-
-span.big {
-  font-size: 130%;
-}
-
-span.footnote {
-  font-size: 80%;
-}
-
-td._c {
-  text-align: center;
-}
-td._r {
-  text-align: right;
-}
-`
 
 func failf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
@@ -126,33 +81,11 @@ Options:
 		failf("book.New failed: %s", err)
 	}
 
-	e, err := epub.NewEpub(b.Title)
-	if err != nil {
-		failf("NewEpub failed: %s", err)
-	}
-
-	e.SetAuthor(b.Author)
-	e.SetLang(b.Language)
-	e.SetIdentifier(b.URL)
-
 	msgf("Author: %s\nTitle: %s\nLang: %s\n", b.Author, b.Title, b.Language)
 	if b.MaybeMissingBFL {
 		msgf("NOTE: Book maybe missing blank first line for new paragraph!\n")
 	}
-
-	cssPath, err := e.AddCSS(dataURI(css, "text/css"), "style.css")
-	if err != nil {
-		failf("AddCSS failed: %s", err)
-	}
-
-	sections := []string{}
-	for _, ch := range b.Chapters {
-		if _, err = e.AddSection(ch.Body, ch.Title, "", cssPath); err != nil {
-			failf("AddSection failed: %s", err)
-		}
-		sections = append(sections, ch.Title)
-	}
-	msgf("Sections: %s\n", strings.Join(sections, ";"))
+	msgf("Chapters: %s\n", strings.Join(b.Chapters.Titles(), "; "))
 
 	outname := fmt.Sprintf("%s.epub", b.TitleKey)
 	if longNameFlag {
@@ -169,14 +102,16 @@ Options:
 		}
 	}
 
-	if err = e.Write(outname); err != nil {
-		failf("Write failed: %s", err)
+	f, err := os.Create(outname)
+	if err != nil {
+		failf("Create failed: %s", err)
+	}
+	defer f.Close()
+
+	if err = b.WriteEPUB(f); err != nil {
+		failf("WriteEPUB failed: %s", err)
 	}
 	msgf("Wrote %s\n", outname)
-}
-
-func dataURI(s string, mimeType string) string {
-	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString([]byte(s)))
 }
 
 func download(titleKey string) error {
