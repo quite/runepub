@@ -1,9 +1,9 @@
-build: fetch-lists
+build:
 	go build -o . ./cmd/...
 
-fetch-lists:
-	[ -e internal/book/a.lst ] || curl -L -fsS -o internal/book/a.lst https://runeberg.org/authors/a.lst
-	[ -e internal/book/t.lst ] || curl -L -fsS -o internal/book/t.lst https://runeberg.org/authors/t.lst
+update-lists:
+	curl -L -fsS -o internal/book/a.lst https://runeberg.org/authors/a.lst
+	curl -L -fsS -o internal/book/t.lst https://runeberg.org/authors/t.lst
 
 books=drglas korkarlen dubbelmord kalocain
 
