@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log"
 	"path"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -155,8 +156,20 @@ func (b *Book) getMetadata(fs fs.FS) error {
 		return fmt.Errorf("Scan failed: %w", err)
 	}
 
-	// TODO should check we got stuff?
+	fields := []string{"Title", "TitleKey", "Author", "Language"}
+	for _, f := range fields {
+		if b.getStringField(f) == "" {
+			return fmt.Errorf("%s not found in metadata", f)
+		}
+	}
+
 	return nil
+}
+
+func (b *Book) getStringField(field string) string {
+	v := reflect.ValueOf(b)
+	f := reflect.Indirect(v).FieldByName(field)
+	return string(f.String())
 }
 
 func decodeISO8859_1(in []byte) string {
